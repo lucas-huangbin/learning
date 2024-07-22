@@ -69,7 +69,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "89aacc5b6086608d",
@@ -147,7 +148,7 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "9031c0af93758565",
+  "active": "36a43873e5c48087",
   "lastOpenFiles": [
     "Untitled.md",
     "DI.md",
