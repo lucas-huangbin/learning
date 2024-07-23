@@ -113,7 +113,34 @@ providedIn: 'root',表示在整个应用所有地方都可以注入，并全局�
 `}`
 
 **4）工厂提供者**
+根据运行前尚不可用的信息创建可变的依赖值，可以用工厂提供者。也就是完全自己决定如何创建依赖。
+例如：你不希望直接将UserService注入到HeroService中，因为你不希望把这个服务与那些高敏感的信息牵扯到一起
+`// src/app/heroes/hero.service.ts (excerpt)`
+`constructor(`
+  `private logger: Logger,`
+  `private isAuthorized: boolean) { }`
 
+`getHeroes() {`
+  `const auth = this.isAuthorized ? 'authorized ' : 'unauthorized';`
+  `this.logger.log(Getting heroes for ${auth} user.);`
+  `return HEROES.filter(hero => this.isAuthorized || !hero.isSecret);`
+`}`
+
+`// src/app/heroes/hero.service.provider.ts (excerpt)`
+
+`const heroServiceFactory = (logger: Logger, userService: UserService) => {`
+  `return new HeroService(logger, userService.user.isAuthorized);`
+`};`
+
+`export const heroServiceProvider =`
+  `{` 
+    `provide: HeroService,`
+    `useFactory: heroServiceFactory,`
+    `deps: [Logger, UserService]`
+  `};`
+
+·useFactory：字段指定该提供者是一个工厂函数，其实现代码是heroServiceFactory
+·deps ：是一个提供者令牌数组，Logger和UserService类都是类提供者的令牌。该注入器解析了这些令牌，并把相应的服务注入到heroServiceFactory工厂函数的参数中
 #### 3.控制反转和依赖注入
 https://segmentfault.com/a/1190000040807826
 例子：通过构造函数注入
@@ -133,3 +160,11 @@ https://segmentfault.com/a/1190000040807826
 
 如果类很多，依赖层级比较深，IocContainer会统一管理依赖，IocContainer也叫**注入器（Injector）**，在Angular中叫Injector
 
+
+#### 多级注入器
+通过依赖注入的概念我们知道，创建实例的工作都交给了Ioc容器（也就是注入器），通过构造函数参数装饰器@Inject(DIToken)告诉注入器我们需要注入DIToken对应的依赖，注入器就会帮我们查找依赖并返回值，Angular应用启动会默认创建相关的注入器，而且Angular的注入器有层级的，类似于Dom树
+
+**1）两个注入器层级**
+Angular中有两个注入器层次结构
+·ModuleInjector层次结构 -- 使用@NgModule()或@Injectable()装饰器在此层次结构中配置ModuleInjector
+·ElementInjector层次结构 -- 在每个DOM元素上隐式创建。除非你再@Directive() 或@Component()的providers属性中进行配置，否则默认情况下，ElementInjector为空
