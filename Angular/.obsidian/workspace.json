@@ -130,8 +130,7 @@
               }
             }
           }
-        ],
-        "currentTab": 3
+        ]
       }
     ],
     "direction": "horizontal",
@@ -148,7 +147,7 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "6713d7b1a0acdf54",
+  "active": "9031c0af93758565",
   "lastOpenFiles": [
     "2024-07-23.md",
     "DI.md",
