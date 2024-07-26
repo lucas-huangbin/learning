@@ -284,3 +284,67 @@ Angular 会先从当前组件/指令的 `ElementInjector` ​查找令牌，�
 
 **注：**
 所有修饰符都可以组合使用，但是不能互斥，比如：@Self & @SkipSelf，@Host()和@Self()
+
+**providedIn: 'any' | 'root' | 'platform' | NgModuleType**
+·root 表示在根模块注入器提供依赖
+·platform 表示在平台注入器提供依赖
+·指定模块表示在特定的特性模块提供依赖（注意循环依赖）
+·any 所有急性加载的模块都会共享同一个服务单例，惰性加载模块各自有它们自己独有的单例
+
+
+
+#### 6.高级技巧
+
+##### 轻量级注入令牌 - Lightweight injection tokens
+
+在开发类库的时候，支持摇树优化是一个重要的特性，要减少体积，那么在angular类库中需要做以下几点：
+·分模块打包和导入，按钮模块和模态框模块分别打包
+·服务尽量使用@Injectable({ providedIn: 'root' | 'any' | })优先
+·使用轻量级注入Token
+
+**令牌什么时候会被保留**
+那么在同一个组件模块中，提供了很多个组件，如果只想打包被使用的组件如何做呢？
+比如我么定义如下的一个card组件，包含了header，同时card组件中需要获取header组件示例。
+`<lib-card>`
+  `<lib-header>...</lib-header>`
+`</lib-card>`
+
+`@Component({`
+  `selector: 'lib-header',`
+  `...,`
+`})`
+`class LibHeaderComponent {}`
+
+`@Component({`
+  `selector: 'lib-card',`
+  `...,`
+`})`
+`class LibCardComponent {`
+  `@ContentChild(LibHeaderComponent)`
+  `header: LibHeaderComponent|null = null;`
+`}`
+
+因为`<lib-header>`是可选的，所以元素可以用最小化的形式<lib-card></lib-card>出现在模板中，在这个例子中，`<lib-header>`没有用过，你肯能期望它会被摇树优化掉。
+但是因为代码中出现了如下的一段导致无法被优化：
+@ContentChild(LibHeaderComponent) header: LibHeaderComponent;
+·其中一个引用位于 类型位置 上，即，它把 LibHeaderComponent 用作类型：header：LibHeaderComponent
+·另一个引用位于 值的位置 ，即，LibHeaderComponent是@ContentChild() 参数装饰器的值：@ContentChild(LibHeaderComponent)
+编译器对这些位置的令牌引用的处理方式时不同的。
+
+·编译器在从TypeScript转换完后会删除这些类型位置上的引用，所以它们对于摇树优化没有什么影响
+·编译器必须在运行时保留值位置上的引用，这就会住址该组件被摇树优化掉。
+
+**什么时候使用轻量级注入令牌模式**
+当一个组件被用作注入令牌时，就会出现摇树优化的问题，有两种情况：
+·令牌用在内容查询中值的位置上，也就是@ContentChild或者@ViewChild等查询装饰器
+·该令牌用构造函数注入的类型说明符，@Inject(OtherComponent),下面的代码虽然没有出现@Inject(),通过前面的知识点，就可以知道这只是简写。
+
+`class MyComponent {`
+  `constructor(@Optional() other: OtherComponent) {}`
+
+  `@ContentChild(OtherComponent)`
+  `other: OtherComponent|null;`
+`}`
+
+**使用轻量级注入令牌**
+轻量级注入令牌设计模式
