@@ -347,4 +347,139 @@ Angular 会先从当前组件/指令的 `ElementInjector` ​查找令牌，�
 `}`
 
 **使用轻量级注入令牌**
-轻量级注入令牌设计模式
+轻量级注入令牌设计模式简单理解就是：使用一个小的抽象类作为注入令牌，并在稍后为它提供实际实现，该抽象类固然会被留下（不会被摇树优化掉），但它很小，对应用程序的大小没有任何重打影响。
+abstract class LibHeaderToken {}
+
+`@Component({`
+  `selector: 'lib-header',`
+  `providers: [`
+    `{provide: LibHeaderToken, useExisting: LibHeaderComponent}`
+  `]`
+  `...,`
+`})`
+`class LibHeaderComponent extends LibHeaderToken {}`
+
+`@Component({`
+  `selector: 'lib-card',`
+  `...,`
+`})`
+`class LibCardComponent {`
+  `@ContentChild(LibHeaderToken) header: LibHeaderToken|null = null;`
+`}`
+
+总结一下，轻量级注入令牌模式有以下几部分组成：
+·一个轻量级的注入令牌，它表现为一个抽象类。
+·一个实现该抽象类的组件定义。
+·注入这种轻量级模式时使用@ContentChild()或者@ContentChildren()。
+·实现轻量级的注入令牌的提供者，它将轻量级注入令牌和它的实现关联起来。
+
+**使用轻量级注入令牌进行API定义**
+为了有类型提示，我们可以为这个轻量级令牌定义函数和属性，不这个抽象类加多少个API定义都不会影响体积，因为TS编译后的类型都会丢失，加类型只是为了在开发模式下类型更加安全。
+
+`abstract class LibHeaderToken {`
+  `name: string;`
+  `abstract doSomething(): void;`
+`}`
+
+`@Component({`
+  `selector: 'lib-header',`
+  `providers: [`
+    `{provide: LibHeaderToken, useExisting: LibHeaderComponent}`
+  `]`
+  `...,`
+`})`
+`class LibHeaderComponent extends LibHeaderToken {`
+  `doSomething(): void {`
+    `// Concrete implementation of doSomething`
+  `}`
+`}`
+
+`@Component({`
+  `selector: 'lib-card',`
+  `...,`
+`})`
+`class LibCardComponent implement AfterContentInit {`
+  `@ContentChild(LibHeaderToken)`
+  `header: LibHeaderToken|null = null;`
+
+  `ngAfterContentInit(): void {`
+    `this.header && this.header.doSomething();`
+  `}`
+
+**为 你的轻量级注入令牌命名**
+轻量级注入令牌只对组件有用。
+·**“LibHeaderComponent”** 遵循 **“Component”** 后缀命名约定
+·**“LibHeaderToken” 遵循** 轻量级注入令牌命名约定。推荐的写法是使用组件基本名加上后缀 **“Token”**
+
+**使用轻量级Token不仅可以减少体积，还可以解决循环引用的问题**
+
+
+
+##### 惰性加载特性模块 -- Lazy-loading Feature Module DI
+
+默认情况下，NgModule都是急性加载的，对于带有很多路由的大型应用，肯定会使用惰性加载 -- 一种按需加载NgModule的模式
+
+**惰性加载入门**
+`const routes: Routes = [`
+  `{`
+    `path: 'items',`
+    `loadChildren: () => import('./items/items.module').then(m => m.ItemsModule)`
+  `}`
+`];`
+
+`RouterModule.forChild([`
+   `{`
+     `path: '',`
+     `component: ItemsComponent`
+   `}`
+`]),`
+确保从AppModule中移除ItemsModule模块。
+
+**如何设置惰性加载**
+建立惰性加载的特性模块有两个主要步骤：
+·使用--route标志，用CLI创建特性模块。ng generate module customers --route customers --module app.module
+·配置相关路由
+
+**惰性加载和急性加载的区别**
+唯一区别就是回：创建子ModuleInjector
+意味着所有的providers和imports模块的providers都是独立的，急性模块并不知道懒加载模块的providers。
+
+**forRoot() 模式**
+forRoot()与forChild()的区别
+
+
+##### forwardRef打破循环
+
+**JS中的Hoisting（变量提升）**
+·变量只有声明被提升，不提升初始化
+·还书可以在声明之前调用，函数的声明被提升
+·函数和变量相比，会被优先提升
+·**class不会被提升**
+`const Foo = class {};`
+`class Bar extends Foo {}`
+`// class 如果提升的话这段代码就会报错`
+
+**组件注入NameService**
+既然class不会提升变量，那么如果在组件后面加一个服务，在providers中设置注入提供者就会报错：**Class 'NameService' used before its declaration.**
+`@Component({`
+    `selector: 'app-forward-ref',`
+    `templateUrl: './forward-ref.component.html',`
+    `styleUrls: ['./forward-ref.component.scss'],`
+    `providers: [`
+        `{`
+           `provide: NameService,`
+           `useClass: NameService`
+        `}`
+    `]`
+`})`
+`export class ForwardRefComponent {}`
+
+`@Injectable()`
+`class NameService {`
+    `name = 'why520crazy';`
+`}`
+解决这个问题有2个方法：
+·第一就是把NameService移动到ForwardRefComponent组件前
+·第二就是使用provide：forwardRef(() => NameService)
+
+forwardRef实现原理很简单，就是让provide存储一个闭包的函数，在定义式步调用，在注入的时候获取Token再调用闭包函数返回NameService的类型，此时JS已经完整执行过，NameService已经定义。
