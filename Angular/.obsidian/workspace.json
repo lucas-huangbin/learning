@@ -8,24 +8,12 @@
         "type": "tabs",
         "children": [
           {
-            "id": "9031c0af93758565",
+            "id": "079f8290d27ed4da",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DI.md",
-                "mode": "source",
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "75b1f3aff26b68bd",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "小知识点.md",
+                "file": "RxJS.md",
                 "mode": "source",
                 "source": false
               }
@@ -98,7 +86,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "DI.md",
+                "file": "RxJS.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -115,7 +103,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "DI.md",
+                "file": "RxJS.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -138,7 +126,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "DI.md"
+                "file": "RxJS.md"
               }
             }
           }
@@ -160,10 +148,12 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "9031c0af93758565",
+  "active": "079f8290d27ed4da",
   "lastOpenFiles": [
-    "小知识点.md",
+    "Pasted image 20240806104727.png",
     "DI.md",
+    "RxJS.md",
+    "小知识点.md",
     "2024-07-23.md",
     "未命名.canvas",
     "Untitled.md",
