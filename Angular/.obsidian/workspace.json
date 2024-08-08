@@ -69,8 +69,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "89aacc5b6086608d",
@@ -150,9 +149,10 @@
   },
   "active": "079f8290d27ed4da",
   "lastOpenFiles": [
-    "Pasted image 20240806104727.png",
-    "DI.md",
+    "Image",
+    "Image/Pasted image 20240806104727.png",
     "RxJS.md",
+    "DI.md",
     "小知识点.md",
     "2024-07-23.md",
     "未命名.canvas",

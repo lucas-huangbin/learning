@@ -12,7 +12,7 @@ RxJS中解决异步事件管理的基本概念是：
 
 #### Observable
 被观察者，用来产生消息/数据。
-![[Pasted image 20240806104727.png]]
+![[./Image/Pasted image 20240806104727.png]]
 Observable是多个值的惰性推送集合。本质其实就是一个随事件不断产生数据的一个集合，称之为流更容易理解。
 
 示例：
@@ -55,3 +55,89 @@ Observable是多个值的惰性推送集合。本质其实就是一个随事件�
 `done`
 
 ##### Pull & Push
+什么是Pull：在拉取体系中，由消费者（主动的）来决定何时从生产者那里接收数据。生产者（被动的）本身不知道数据是何时交付到消费者手中的。
+什么是Push：在推送体系中，由生产者（主动的）来决定何时把数据发送给消费者。消费者（被动的）本身不知道何时会接受到数据。
+
+##### Observable剖析
+
+**创建Observables**
+Rx.Obsercable.create是Observable构造函数的别名，它接受一个参数：subscribe函数。
+示例：
+`var observable = Rx.Observable.create(function subscribe(observer) {`
+  `var id = setInterval(() => {`
+    `observer.next('hi')`
+  `}, 1000);`
+`});`
+
+注：Observables可以使用create来创建，但通常我们使用所谓的创建操作符，像of、from、interval、等等。
+
+**订阅Observables**
+示例中的Observable对象observable可以订阅，像这样：
+`observable.subscribe(x => console.log(x));`
+
+`observable.subscribe` 和 `Observable.create(function subscribe(observer) {...})` 中的 `subscribe`有着同样的名字，这并不是一个巧合。在库中，它们是不同的，但从实际出发，你可以认为在概念上它们是等同的。
+这表明subscribe调用在同一Observable的多个观察者之间是不共享的。当使用一个观察者调用observable.subscribe时，`Observable.create(function subscribe(observer) {...})` 中的 `subscribe` 函数只服务于给定的观察者。对observable.subscribe的每次调用都会触发针对给定观察者的独立设置。
+
+注：订阅Observable像是调用函数，并提供接收数据的回调函数。
+
+**执行Observables**
+`Observable.create(function subscribe(observer) {...})` 中`...`的代码表示 “Observable 执行”，它是惰性运算，只有在每个观察者订阅后才会执行。随着时间的推移，执行会以同步或异步的方式产生多个值。
+
+Observable 执行可以传递三种类型的值：
+- "Next" 通知： 发送一个值，比如数字、字符串、对象，等等。
+- "Error" 通知： 发送一个 JavaScript 错误 或 异常。
+- "Complete" 通知： 不再发送任何值。
+
+**清理Observable执行**
+当调用了observable.subscribe，观察者会被附加到新创建的Observable执行中。这个调用还返回了一个对象，即Subscription（订阅）：
+`var subscription = observable.subscribe(x => console.log(x));`
+取消执行：
+`var observable = Rx.Observable.from([10, 20, 30]);` 
+`var subscription = observable.subscribe(x => console.log(x));` 
+`// 稍后：` 
+`subscription.unsubscribe();`
+
+当我们使用 `create()` 方法创建 Observable 时，Observable 必须定义如何清理执行的资源。你可以通过在 `function subscribe()` 中返回一个自定义的 `unsubscribe` 函数。
+举例来说，这是我们如何清理使用了 `setInterval` 的 interval 执行集合：
+`var observable = Rx.Observable.create(function subscribe(observer) {`
+  `// 追踪 interval 资源`
+  `var intervalID = setInterval(() => {`
+    `observer.next('hi');`
+  `}, 1000);`
+
+  `// 提供取消和清理 interval 资源的方法`
+  `return function unsubscribe() {`
+    `clearInterval(intervalID);`
+  `};`
+`});`
+
+##### Observer(观察者)
+观察者是由Observable发送的值的消费者。观察者只是一组回调函数的集合，每个回调函数对应一种Observable发送的通知类型：next、error、和complete。下面的示例是一个典型的观察者对象：
+`var observer = {`
+  `next: x => console.log('Observer got a next value: ' + x),`
+  `error: err => console.error('Observer got an error: ' + err),`
+  `complete: () => console.log('Observer got a complete notification'),`
+`};`
+
+要使用观察者，需要把它提供给Observable的subscribe方法：
+`observable.subscribe(observer);`
+
+##### Subscription(订阅)
+Subscription是表示可清理资源的对象，通常是Observable的执行。Subscription有一个重要的方法，即unsubscribe，它不需要任何参数，只是用来清理由Subscription占用的资源。在上一版本的rxjs中，Subscription叫做“Disposable”（可清理对象）。
+
+Subscription还可以合在一起，这样一个Subscription调用unsubscribe()方法，可能有多个Subscription取消订阅。
+`var observable1 = Rx.Observable.interval(400);`
+`var observable2 = Rx.Observable.interval(300);`
+  
+`var subscription = observable1.subscribe(x => console.log('first: ' + x));`
+`var childSubscription = observable2.subscribe(x => console.log('second: ' + x));`
+
+`subscription.add(childSubscription);`
+`setTimeout(() => {`
+  `// subscription 和 childSubscription 都会取消订阅`
+  `subscription.unsubscribe();`
+`}, 1000);`
+
+Subscription还有一个remove(otherSubscription)方法，用来撤销一个已添加的子Subscription。
+
+##### Subject(主体)
