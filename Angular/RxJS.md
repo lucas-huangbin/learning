@@ -111,7 +111,7 @@ Observable 执行可以传递三种类型的值：
   `};`
 `});`
 
-##### Observer(观察者)
+#### Observer(观察者)
 观察者是由Observable发送的值的消费者。观察者只是一组回调函数的集合，每个回调函数对应一种Observable发送的通知类型：next、error、和complete。下面的示例是一个典型的观察者对象：
 `var observer = {`
   `next: x => console.log('Observer got a next value: ' + x),`
@@ -122,7 +122,7 @@ Observable 执行可以传递三种类型的值：
 要使用观察者，需要把它提供给Observable的subscribe方法：
 `observable.subscribe(observer);`
 
-##### Subscription(订阅)
+#### Subscription(订阅)
 Subscription是表示可清理资源的对象，通常是Observable的执行。Subscription有一个重要的方法，即unsubscribe，它不需要任何参数，只是用来清理由Subscription占用的资源。在上一版本的rxjs中，Subscription叫做“Disposable”（可清理对象）。
 
 Subscription还可以合在一起，这样一个Subscription调用unsubscribe()方法，可能有多个Subscription取消订阅。
@@ -140,4 +140,53 @@ Subscription还可以合在一起，这样一个Subscription调用unsubscribe()�
 
 Subscription还有一个remove(otherSubscription)方法，用来撤销一个已添加的子Subscription。
 
-##### Subject(主体)
+#### Subject(主体)
+Subject是一种特殊类型的Observable，它允许将值多播给多个观察者，所以Subject是多播的，而普通的Observables是单播的（每个已订阅的观察者都拥有Observable的独立执行）。
+**每个Subject都是Observable** - 对于Subject你可以提供一个观察者并使用subscribe方法，就可以开始正常接受值。在Subject内部，subscribe不会调用发送值的新执行。它只是将给定的观察者注册到观察者列表中，类似于其他库或语言中的addListener的工作方式（只会接收观察者注册监听之后的值，注册监听之前的值不接收）。
+**每个Subject都是观察者** - Subject是一个有有如下方法的对象：next(v)、error(e)和complete()。要给Subject提供新值，只要调用next(theValue)，它会将值多播给已注册监听该Subject的观察者们。
+`var subject = new Rx.Subject();`
+
+`subject.subscribe({`
+  `next: (v) => console.log('observerA: ' + v)`
+`});`
+`subject.subscribe({`
+  `next: (v) => console.log('observerB: ' + v)`
+`});`
+
+`subject.next(1);`
+`subject.next(2);`
+
+因为Subject是观察者，所以你也可以把Subject作为参数传给任何Observable的subscribe方法，示例：
+`var subject = new Rx.Subject();`
+
+`subject.subscribe({`
+  `next: (v) => console.log('observerA: ' + v)`
+`});`
+`subject.subscribe({`
+  `next: (v) => console.log('observerB: ' + v)`
+`});`
+  
+`var observable = Rx.Observable.from([1, 2, 3]);`
+  
+`observable.subscribe(subject); // 你可以提供一个 Subject 进行订阅`
+
+使用上面的方法，我们只是通过Subject将单播的Observable执行转换为多播的（**Subject本身可以发送和接收，将Subject作为观察者提供给Observable，Observable再通过Subject发送，那么监听Subject就可以接收到Observable的值**）。这也说明Subjects是将任意Observable执行共享给多个观察者的唯一方式。
+
+##### 多播的Observables
+“多播Observable”通过Subject来发送通知，这个Subject可能有多个订阅者，然而普通的“单播Observable”只发送给单个观察者。
+在底层，这就是multicast操作符的工作原理：观察者订阅一个基础的Subject，然后Subject订阅源Observable。下面的示例与前面使用 `observable.subscribe(subject)` 的示例类似：
+
+`var source = Rx.Observable.from([1, 2, 3]);`
+`var subject = new Rx.Subject();`
+`var multicasted = source.multicast(subject);`
+  
+`// 在底层使用了 subject.subscribe({...}):`
+`multicasted.subscribe({`
+  `next: (v) => console.log('observerA: ' + v)`
+`});`
+`multicasted.subscribe({`
+  `next: (v) => console.log('observerB: ' + v)`
+`});`
+  
+`// 在底层使用了 source.subscribe(subject):`
+`multicasted.connect();`
