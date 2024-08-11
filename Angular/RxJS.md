@@ -193,3 +193,320 @@ Subject是一种特殊类型的Observable，它允许将值多播给多个观察
   
 `// 在底层使用了 source.subscribe(subject):`
 `multicasted.connect();`
+
+multicast返回一个看起来像普通Observable的Observable，但在订阅时会像Subject一样工作。multicast返回一个ConnectableObservable，它只是一个带有connect()方法的Observable。
+connect()方法对于确定共享的Observable何时开始执行非常重要。因为connect()在后台执行source.subscribe(subject)，所以connect()返回一个订阅，你可以退订以取消共享的Observable执行过程。
+
+**引用计数**
+手动调用connect()并处理订阅通常很麻烦。通常，我们希望在第一个Observer订阅时自动连接，并在最后一个Observer退订时自动取消共享执行。
+通过显式调用connect()来实现这一点：
+`import { interval, Subject, multicast } from 'rxjs';`
+
+`const source = interval(500);`
+`const subject = new Subject();`
+`const multicasted = source.pipe(multicast(subject));`
+`let subscription1, subscription2, subscriptionConnect;`
+
+`subscription1 = multicasted.subscribe({`
+  `next: (v) => console.log(observerA: ${v}),`
+`});`
+`// We should call connect() here, because the first`
+`// subscriber to multicasted is interested in consuming values`
+`subscriptionConnect = multicasted.connect();`
+
+`setTimeout(() => {`
+  `subscription2 = multicasted.subscribe({`
+    `next: (v) => console.log(observerB: ${v}),`
+  `});`
+`}, 600);`
+
+`setTimeout(() => {`
+  `subscription1.unsubscribe();`
+`}, 1200);`
+
+`// We should unsubscribe the shared Observable execution here,`
+`// because multicasted would have no more subscribers after this`
+`setTimeout(() => {`
+  `subscription2.unsubscribe();`
+  `subscriptionConnect.unsubscribe(); // for the shared Observable execution`
+`}, 2000);`
+
+如果我们希望避免显式调用connect()，可以使用ConnectableObservable的refCount()方法（引用计数），它返回一个Observable来跟踪它有多少订阅者。当订阅者数量从0增加到1时，它会为我们调用connect()，从而开始共享执行，只有当订阅者数量从1减少到0时，它才会完全退订，并停止进一步执行。
+
+例如：
+`import { interval, Subject, multicast, refCount } from 'rxjs';`
+
+`const source = interval(500);`
+`const subject = new Subject();`
+`const refCounted = source.pipe(multicast(subject), refCount());`
+`let subscription1, subscription2;`
+
+`// This calls connect(), because`
+`// it is the first subscriber to refCounted`
+`console.log('observerA subscribed');`
+`subscription1 = refCounted.subscribe({`
+  `next: (v) => console.log(observerA: ${v}),`
+`});`
+
+`setTimeout(() => {`
+  `console.log('observerB subscribed');`
+  `subscription2 = refCounted.subscribe({`
+    `next: (v) => console.log(observerB: ${v}),`
+  `});`
+`}, 600);`
+
+`setTimeout(() => {`
+  `console.log('observerA unsubscribed');`
+  `subscription1.unsubscribe();`
+`}, 1200);`
+
+`// This is when the shared Observable execution will stop, because`
+`// refCounted would have no more subscribers after this`
+`setTimeout(() => {`
+  `console.log('observerB unsubscribed');`
+  `subscription2.unsubscribe();`
+`}, 2000);`
+
+`// Logs`
+`// observerA subscribed`
+`// observerA: 0`
+`// observerB subscribed`
+`// observerA: 1`
+`// observerB: 1`
+`// observerA unsubscribed`
+`// observerB: 2`
+`// observerB unsubscribed`
+
+refCount()方法只存在于ConnectableObservable上，它返回一个Observable，而不是另一个ConnectableObservable。 
+
+##### BehaviorSubject（行为主体）
+
+Subjects的变体之一是BehaviorSubject，它具有“当前值”的概念。它存储发给其消费者的最新值，并且每当有新的Observer订阅时，它将立即从BehaviorSubject接受到“当前值”。
+
+在下面的示例中，BehaviorSubject使用第一个Observer在订阅时收到的值0进行初始化。第二个Observer接收到值2，即使它是在发送值2之后订阅的。
+`import { BehaviorSubject } from 'rxjs';`
+`const subject = new BehaviorSubject(0); // 0 is the initial value`
+
+`subject.subscribe({`
+  `next: (v) => console.log(observerA: ${v}),`
+`});`
+
+`subject.next(1);`
+`subject.next(2);`
+
+`subject.subscribe({`
+  `next: (v) => console.log(observerB: ${v}),`
+`});`
+
+`subject.next(3);`
+
+`// Logs`
+`// observerA: 0`
+`// observerA: 1`
+`// observerA: 2`
+`// observerB: 2`
+`// observerA: 3`
+`// observerB: 3`
+
+
+##### ReplaySubject（重播主体）
+ReplaySubject与BehaviorSubject类似，它可以将旧值发送给订阅者，但它也可以记录Observable执行结果的一部分。
+ReplaySubject会记录来自Observable执行的多个值，并将他们重播给新订阅者。
+创建ReplaySubject时，你可以指定要重播的值的数量：
+`import { ReplaySubject } from 'rxjs';`
+`const subject = new ReplaySubject(3); // buffer 3 values for new subscribers`
+
+`subject.subscribe({`
+  `next: (v) => console.log(observerA: ${v}),`
+`});`
+
+`subject.next(1);`
+`subject.next(2);`
+`subject.next(3);`
+`subject.next(4);`
+
+`subject.subscribe({`
+  `next: (v) => console.log(observerB: ${v}),`
+`});`
+
+`subject.next(5);`
+
+`// Logs:`
+`// observerA: 1`
+`// observerA: 2`
+`// observerA: 3`
+`// observerA: 4`
+`// observerB: 2`
+`// observerB: 3`
+`// observerB: 4`
+`// observerA: 5`
+`// observerB: 5`
+
+除了缓冲区大小之外，你还可以指定一个以毫秒为单位的窗口时间，以确定记录的值可以存在多长时间。在以下示例中，我们使用100个元素的大型缓冲区，但窗口时间参数仅为500毫秒。
+`import { ReplaySubject } from 'rxjs';`
+`const subject = new ReplaySubject(100, 500 /* windowTime */);`
+
+`subject.subscribe({`
+  `next: (v) => console.log(observerA: ${v}),`
+`});`
+
+`let i = 1;`
+`setInterval(() => subject.next(i++), 200);`
+
+`setTimeout(() => {`
+  `subject.subscribe({`
+    `next: (v) => console.log(observerB: ${v}),`
+  `});`
+`}, 1000);`
+
+`// Logs`
+`// observerA: 1`
+`// observerA: 2`
+`// observerA: 3`
+`// observerA: 4`
+`// observerA: 5`
+`// observerB: 3`
+`// observerB: 4`
+`// observerB: 5`
+`// observerA: 6`
+`// observerB: 6`
+`// ...`
+
+##### AsyncSubject （异步主体）
+AsyncSubject时一种变体，其中仅将Observable执行的最后一个值发送给其Observer，并且仅在执行完成时发送。
+`import { AsyncSubject } from 'rxjs';`
+`const subject = new AsyncSubject();`
+
+`subject.subscribe({`
+  `next: (v) => console.log(observerA: ${v}),`
+`});`
+
+`subject.next(1);`
+`subject.next(2);`
+`subject.next(3);`
+`subject.next(4);`
+
+`subject.subscribe({`
+  `next: (v) => console.log(observerB: ${v}),`
+`});`
+
+`subject.next(5);`
+`subject.complete();`
+
+`// Logs:`
+`// observerA: 5`
+`// observerB: 5`
+
+AsyncSubject类似于last()操作符，因为它会等待complete() 通知以传递单个值。
+
+##### void 主体
+有时，发出值这件事本身就比发出的值更重要。
+例如，下面的代码表示已经过了一秒钟。
+`const subject = new Subject<string>();`
+`setTimeout(() => subject.next('dummy'), 1000);`
+
+以这种方式传递一个虚拟值很笨拙，并且可能会使用户感到困惑。
+通过声明一个**void主体**，你可以表明该值时无所谓的。只有事件本身才重要。
+`const subject = new Subject<void>();`
+`setTimeout(() => subject.next(), 1000);`
+
+带有上下文的完整示例如下：
+`import { Subject } from 'rxjs';`
+
+`const subject = new Subject(); // Shorthand for Subject<void>`
+
+`subject.subscribe({`
+  `next: () => console.log('One second has passed'),`
+`});`
+
+`setTimeout(() => subject.next(), 1000);`
+
+注：
+在版本7之前，Subject值的默认类型时any。`Subject<any>`禁用发出值的类型检查，而`Subject<void>`可以防止意外访问所发出的值。如果你想要老式行为，请将Subject替换为`Subject<any>`。
+
+
+#### RxJS操作符
+
+##### 什么时操作符？
+
+操作符时函数。有两种操作符：
+**可联入管道的操作符**时可以使用语法observableInstance.pipe(operator()) 联入Observables管道的类型。其中包括filter(...)和mergeMap(...)。调用时，它们不会更改现有的Observable实例。相反，它们会返回一个新的Observable，其订阅逻辑时基于第一个Observable的。
+
+可联入管道的操作符是一个以Observable作为输入并返回另一个Observable的函数。这是一个纯操作：之前的Observable保持不变。
+
+可联入管道的操作符本质上是一个纯函数，它将一个Observable作为输入并生成另一个Observable作为输出。定阅此输出的Observable也同时会订阅其输入的Observable。
+
+**创建操作符**是另一类操作符，可以作为独立函数调用以创建新的Observable。例如：of(1, 2, 3)创建一个observable，它将一个接一个的发出1，2和3。
+例如：
+1）map操作符
+`import { of, map } from 'rxjs';`
+
+`of(1, 2, 3)`
+  `.pipe(map((x) => x * x))`
+  `.subscribe((v) => console.log(value: ${v}));`
+
+`// Logs:`
+`// value: 1`
+`// value: 4`
+`// value: 9`
+
+2）first操作符：
+`import { of, first } from 'rxjs';`
+
+`of(1, 2, 3)`
+  `.pipe(first())`
+  `.subscribe((v) => console.log(value: ${v}));`
+
+`// Logs:`
+`// value: 1`
+
+注：map在逻辑上看必须动态构建，因为它必须给出映射函数。作为对比，first可能是一个常数，但仍然是动态构建的。作为一般性的实践，所有操作符都是构造出来的，乌润它们是否需要参数。
+
+##### 管道
+
+可联入管道的操作符都是函数，因此它们可以像普通函数一样使用：op()(obs) --- 但实际上，它们中的大多数往往会纠缠在一起，很快会变得不可读：`op4()(op3()(op2()(op1()(obs))))`。出于这个原因，Observables又一个名为.pipe()的放大，它完成了同样的事情，同时更容易阅读：
+`obs.pipe(op1(), op2(), op3(), op4());`
+作为一种风格，即使只有一个操作符，也从不使用op()(obs)；obs.pipe(op())是普通的首选项。
+
+##### 创建操作符
+
+与可联入管道的操作符不同，创建操作符一种函数，可用于根据一些常见预定义行为或联合其它Observable来创建一个Observable。
+创建操作符的典型示例是interval函数。它将一个数字（而不是Observable）作为输入参数，并产生一个Observable作为输出：
+`import { interval } from 'rxjs';`
+
+`const observable = interval(1000 /* number of milliseconds */);`
+
+##### 高阶 Observables
+
+Observables最常发出的是普通值，如字符串和数字，但令人惊讶的是，它还经常需要处理Observables的Observables，即所谓的高阶Observables。例如：
+`const fileObservable = urlObservable.pipe(map((url) => http.get(url)));`
+
+http.get()会为每一个单独的URL返回一个Observable（可能是字符串或字符串数组）。现在你有了一个高阶Observable。
+但是你如何使用高阶Observable呢？通常，通过展平处理：以某种方式将高阶Observable转换为普通Observable。例如：
+`const fileObservable = urlObservable.pipe(`
+  `map((url) => http.get(url)),`
+  `concatAll()`
+`);`
+
+concatAll()操作符订阅从外部Observable出来的每一个内部Observable，并复制所有发出的值，直到该Observable完成，然后继续处理下一个。所有值都以这种方式连接。其他有用的展平操作符（称为联结操作符）有：
+- mergeAll() — 在每个内部Observable抵达时订阅它，然后在每个值抵达时发出这个值
+- switchAll() — 在第一个内部Observable抵达时订阅它，然后在每个值抵达时发出这个值，但是当下一个内部Observable抵达时，退订前一个，并订阅新的。
+- exhaustAll() — 在第一个内部Observable抵达时订阅它，并在每个值抵达时发出这个值，丢弃所有新抵达的内部Observsble直到第一个完成，然后等待下一个内部Observable。
+
+正如许多数组库会将map()和flat()（或flatten()）组合成一个flatMap()一样，所有RxJS展平操作符都有其映射的等价物：concatMap()、mergeMap()、switchMap()和exhaustMap().
+
+##### 弹珠图
+![](./Image/marble-diagram-anatomy.svg)
+
+##### 操作符的分类
+
+https://rxjs.tech/guide/operators#categories-of-operators
+
+##### 创建自定义操作符
+
+使用pipe() 函数创建新的操作符
+https://rxjs.tech/guide/operators#creating-new-operators-from-scratch
+
+
+#### 调度器
+
