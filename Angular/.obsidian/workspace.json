@@ -13,13 +13,50 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "RxJS.md",
+                "file": "Angular - 组件.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "db70076153434a8b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Angular - 模板语法.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "d1ba63d403491549",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Angular - 管道.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "024dd59cc91be172",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "小知识点.md",
                 "mode": "source",
                 "source": false
               }
             }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -69,8 +106,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 296.5
   },
   "right": {
     "id": "89aacc5b6086608d",
@@ -86,7 +122,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "RxJS.md",
+                "file": "Angular - 管道.md",
                 "collapseAll": true,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -103,7 +139,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "RxJS.md",
+                "file": "Angular - 管道.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -126,7 +162,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "RxJS.md"
+                "file": "Angular - 管道.md"
               }
             }
           }
@@ -147,13 +183,22 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "079f8290d27ed4da",
+  "active": "d1ba63d403491549",
   "lastOpenFiles": [
+    "Angular - 模板语法.md",
+    "Angular - 管道.md",
+    "Angular - 组件.md",
+    "Image/Pasted image 20240820180339.png",
+    "Image/Pasted image 20240820175953.png",
+    "Image/Pasted image 20240820105532.png",
+    "小知识点.md",
+    "RxJS.md",
+    "Image/Pasted image 20240819105632.png",
+    "Image/Pasted image 20240819104749.png",
+    "Image/Pasted image 20240819104631.png",
     "Image",
     "Image/Pasted image 20240806104727.png",
-    "RxJS.md",
     "DI.md",
-    "小知识点.md",
     "2024-07-23.md",
     "未命名.canvas",
     "Untitled.md",
