@@ -25,7 +25,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Angular - 模板语法.md",
+                "file": "RxJS.md",
                 "mode": "source",
                 "source": false
               }
@@ -106,7 +106,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 296.5
+    "width": 296.5,
+    "collapsed": true
   },
   "right": {
     "id": "89aacc5b6086608d",
@@ -185,6 +186,7 @@
   },
   "active": "d1ba63d403491549",
   "lastOpenFiles": [
+    "RxJS.md",
     "Angular - 模板语法.md",
     "Angular - 管道.md",
     "Angular - 组件.md",
@@ -192,7 +194,6 @@
     "Image/Pasted image 20240820175953.png",
     "Image/Pasted image 20240820105532.png",
     "小知识点.md",
-    "RxJS.md",
     "Image/Pasted image 20240819105632.png",
     "Image/Pasted image 20240819104749.png",
     "Image/Pasted image 20240819104631.png",
