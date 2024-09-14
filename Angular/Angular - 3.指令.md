@@ -241,3 +241,46 @@ Angular支持结构型指令的简写语法，这避免了显式编写`<ng-templ
 ![[Pasted image 20240823171621.png]]
 
 
+#### 组合指令API
+
+##### 向组件添加指令
+你可以通过hostDirectives属性添加到组件的装饰器来将指令应用于组件。我们称这样的指令为宿主指令。
+
+在此示例中，我们将指令MenuBehavior应用五AdminMenu的宿主元素。这类似于将MenuBehavior应用于模板的`<admin-menu>`元素。
+
+`@Component({`
+  `standalone: true,`
+  `selector: 'admin-menu',`
+  `template: 'admin-menu.html',`
+  `hostDirectives: [MenuBehavior],`
+`})`
+`export class AdminMenu { }`
+
+
+当框架渲染组件时，Angular还会创建每个宿主指令的实例。这些指令的宿主绑定应用于宿主元素。默认情况下，宿主指令的输入和输出不会作为组件公共API的一部分公开。
+
+**Angular会在编译时静态应用宿主指令**。你不能在运行时动态添加指令。
+**在hostDirectives中使用的指令必须是standalone：true**。
+
+**Angular会忽略应用在hostDirectives属性中的指令selector**。
+
+
+
+
+##### 包含输入属性和输出属性
+默认情况下，当你将hostDirectives应用于组件时，宿主指令的输入属性和输出属性不会包含在组件的API中。你可以通过扩展hostDirectives中的条目来在组件的API中显示包含输入和输出：
+`@Component({`
+  `standalone: true,`
+  `selector: 'admin-menu',`
+  `template: 'admin-menu.html',`
+  `hostDirectives: [{`
+    `directive: MenuBehavior,`
+    `inputs: ['menuId'],`
+    `outputs: ['menuClosed'],`
+  `}],`
+`})`
+`export class AdminMenu { }`
+
+通过显式指定输入和输出，使用 `hostDirective` 的组件的使用者可以将它们绑定在模板中：
+
+`<admin-menu menuId="top-menu" (menuClosed)="logMenuClosed()">`
